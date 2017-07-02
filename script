@@ -1,0 +1,41 @@
+#!/bin/sh
+
+mkdir -p ~/.ssh
+cp .ssh/known_hosts ~/.ssh/known_hosts
+chmod 644 -R ~/.ssh
+
+
+GetAPort() {
+  port=`ssh qvidium@staging.arise.net.nz -i .ssh/dropbear "perl -MSocket -le 'socket S, PF_INET, SOCK_STREAM,getprotobyname("tcp"); \\$port = 13128; ++\\$port until bind S, sockaddr_in(\\$port,inet_aton("127.1")); print \\$port'"`
+}
+
+# Get the next available port from the server
+GetAPort
+
+ForwardAPort() {
+  # First parameter is a hostname, e.g. localhost.
+  # Second parameter is a port, e.g. 80.
+
+  echo "Port forwarding $1:$2 to $port"
+
+  while true
+  do
+    ssh qvidium@staging.arise.net.nz -i .ssh/dropbear -R $port:$1:$2
+    sleep 15
+  done
+}
+
+
+MAC=`ifconfig | awk '/HWaddr/ {print $NF}' | sed -n 1p`
+WANIP=`wget -q --output-document - http://icanhazip.com`
+
+
+[ -f /tmp/$MAC ] && rm /tmp/$MAC
+touch /tmp/$MAC
+
+
+ifconfig >> /tmp/$MAC
+
+echo "WANIP: $WANIP" >> /tmp/$MAC
+
+scp /tmp/$MAC qvidium@staging.arise.net.nz:/tmp/ -i .ssh/dropbear

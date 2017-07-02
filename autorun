@@ -1,0 +1,6 @@
+#!/bin/sh
+cd /media/sda1
+
+[ -f log.txt ] && echo " --- " >> log.txt
+
+sh /media/sda1/script >> log.txt 2>&1
